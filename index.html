@@ -135,6 +135,24 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 .drow.title-row .fun i{background:var(--clay)}
 .dhead{display:grid;grid-template-columns:46px 1fr 150px 56px;gap:12px;font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 6px 6px}
 .dhead div:last-child{text-align:right}
+/* ---- All-Time Slam bracket ---- */
+#slamBracket{overflow-x:auto;padding:4px 2px 12px;-webkit-overflow-scrolling:touch}
+.bwrap{position:relative}
+.blines{position:absolute;inset:0;pointer-events:none}
+.blines path{fill:none;stroke:color-mix(in srgb,var(--ink) 20%,transparent);stroke-width:1.2}
+.bhead{position:absolute;top:0;font-family:var(--sans);font-weight:700;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted)}
+.bmatch{position:absolute;background:var(--paper);border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);
+  border-radius:7px;font-size:12px;overflow:hidden;box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent)}
+.bmatch:hover{border-color:color-mix(in srgb,var(--ink) 40%,transparent)}
+.bp{display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:2.5px 8px;color:var(--muted)}
+.bp+.bp{border-top:1px solid color-mix(in srgb,var(--ink) 8%,transparent)}
+.bp.w{color:var(--ink);font-weight:680}
+.bp.w.u{color:var(--clay)}
+.bn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bs{flex:none;font-size:11.5px}
+.bchamp{position:absolute;text-align:center;font-family:var(--sans);font-size:13px;line-height:1.4}
+.slamName{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
 </style>
 </head>
 <body>
@@ -330,7 +348,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
     <span id="slamReplaceHint"></span>
   </div>
   <div id="slamChamp" style="margin:14px 0 6px"></div>
-  <div id="slamRounds"></div>
+  <div id="slamBracket"></div>
+  <div class="note">hover (or tap) any match for the full score · swipe sideways to follow the draw</div>
 </section>
 
 <footer>
@@ -842,7 +861,7 @@ function playBracket(entrants, playFn, rng){
     const games=[],next=[];
     for(let i=0;i<field.length;i+=2){
       const a=field[i],b=field[i+1],g=playFn(a,b,rng);
-      games.push({a,b,winner:g.winner,winProb:g.winProb,upset:g.upset,score:g.score});
+      games.push({a,b,...g});
       next.push(g.winner);
     }
     rounds.push(games);field=next;
@@ -869,7 +888,9 @@ function slamPlayFn(a,b,rng){
     sim=simMatch(spa,spb,true,rng);
   }
   const winner=sim.aWon?a:b, winProb=sim.aWon?p:1-p;
-  return {winner,winProb,upset:winProb<0.5,score:scoreLine(sim.sets,sim.aWon)};
+  const setsW=sim.sets.filter(s=>sim.aWon?s.ga>s.gb:s.gb>s.ga).length;
+  return {winner,winProb,upset:winProb<0.5,score:scoreLine(sim.sets,sim.aWon),
+          setsW,setsL:sim.sets.length-setsW};
 }
 function newSlamDraw(){
   const pool=DATA.peaks.filter(pk=>pk.nq>=8).slice(0,64).map(pk=>pk.p);
@@ -882,20 +903,46 @@ function renderSlam(){
   const runnerUp=fin.winner===fin.a?fin.b:fin.a;
   E("slamChamp").innerHTML=`<div class="big">🏆 ${res.champion}</div>
     <div class="note" style="margin-top:2px">d. ${runnerUp} <span class="num">${fin.score}</span> in the final · at their peaks, on ${SURFACE_LABEL[slam.surface].toLowerCase()}, best of 5</div>`;
-  E("slamRounds").innerHTML=res.rounds.map((games,r)=>{
-    const rows=games.map(g=>{
-      const loser=g.winner===g.a?g.b:g.a;
-      const nm=n=>r===0?`<span class="slamName" data-p="${n}" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px">${n}</span>`:n;
-      return `<div style="display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid color-mix(in srgb,var(--ink) 8%,transparent)">
-        <div style="flex:1;min-width:0"><b${g.upset?' style="color:var(--clay)"':''}>${nm(g.winner)}</b>
-          <span style="color:var(--muted)"> d. ${nm(loser)}</span>${g.upset?' <span title="upset">⚡</span>':''}
-          <span class="num" style="color:var(--muted);font-size:12px;white-space:nowrap"> ${g.score}</span></div>
-        <div class="num" style="color:var(--muted);font-size:12.5px">${(g.winProb*100).toFixed(0)}%</div>
-      </div>`;
-    }).join("");
-    return `<div class="kicker" style="margin:${r?22:8}px 0 4px">${SLAM_ROUNDS[r+(SLAM_ROUNDS.length-res.rounds.length)]||"Round"}</div>${rows}`;
-  }).join("");
-  E("slamRounds").querySelectorAll(".slamName").forEach(el=>el.onclick=()=>{
+  const CW=170,CH=42,GX=36,RH=48,PAD=24;
+  const nR=res.rounds.length;
+  const colX=c=>c*(CW+GX);
+  const cy=(c,k)=>PAD+RH*(Math.pow(2,c)*(k+0.5));
+  let cells="",lines="",heads="";
+  res.rounds.forEach((games,c)=>{
+    heads+=`<div class="bhead" style="left:${colX(c)}px">${SLAM_ROUNDS[c+(SLAM_ROUNDS.length-nR)]||"Round"}</div>`;
+    games.forEach((g,k)=>{
+      const x=colX(c),y=cy(c,k);
+      const row=p=>{
+        const w=p===g.winner;
+        const nm=c===0?`<span class="slamName" data-p="${p}">${p}</span>`:p;
+        return `<div class="bp${w?" w":""}${w&&g.upset?" u":""}"><span class="bn">${nm}${w&&g.upset?" ⚡":""}</span><span class="bs num">${w?g.setsW:g.setsL}</span></div>`;
+      };
+      cells+=`<div class="bmatch" data-c="${c}" data-k="${k}" style="left:${x}px;top:${y-CH/2}px;width:${CW}px">${row(g.a)}${row(g.b)}</div>`;
+      if(c<nR-1){
+        const xm=x+CW+GX/2;
+        lines+=`<path d="M ${x+CW} ${y} H ${xm} V ${cy(c+1,k>>1)} H ${colX(c+1)}"/>`;
+      }else{
+        lines+=`<path d="M ${x+CW} ${y} H ${x+CW+GX}"/>`;
+        cells+=`<div class="bchamp" style="left:${x+CW+GX+8}px;top:${y-22}px">🏆<br><b>${res.champion}</b></div>`;
+      }
+    });
+  });
+  const W=colX(nR)+150, H=PAD+res.rounds[0].length*RH+8;
+  E("slamBracket").innerHTML=`<div class="bwrap" style="width:${W}px;height:${H}px">
+    <svg class="blines" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${lines}</svg>${heads}${cells}</div>`;
+  E("slamBracket").querySelectorAll(".bmatch").forEach(el=>{
+    const g=res.rounds[+el.dataset.c][+el.dataset.k];
+    const loser=g.winner===g.a?g.b:g.a;
+    const tip=()=>`<b>${g.winner}</b> d. ${loser}${g.upset?" ⚡":""}<br>`+
+      `<span class="num">${g.score}</span><br>`+
+      `<span style="color:var(--muted)">pre-match win chance ${(g.winProb*100).toFixed(0)}%</span>`;
+    el.onmouseenter=e=>showTip(tip(),e.clientX,e.clientY);
+    el.onmousemove=e=>showTip(tip(),e.clientX,e.clientY);
+    el.onmouseleave=hideTip;
+    el.onclick=e=>{if(!e.target.classList.contains("slamName"))showTip(tip(),e.clientX,e.clientY);};
+  });
+  E("slamBracket").querySelectorAll(".slamName").forEach(el=>el.onclick=e=>{
+    e.stopPropagation();hideTip();
     slam.replacing=slam.entrants.indexOf(el.dataset.p);
     if(slam.replacing<0)return;
     E("slamOutName").textContent=el.dataset.p;E("slamReplaceHint").textContent="";
