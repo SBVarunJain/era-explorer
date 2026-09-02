@@ -170,7 +170,6 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
   <button data-v="peaks">Career peaks</button>
   <button data-v="eras">Eras</button>
   <button data-v="h2h">Head to head</button>
-  <button data-v="lab">Slam draw</button>
   <button data-v="slam">All-Time Slam</button>
 </nav>
 
@@ -297,40 +296,6 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
   </div>
 </section>
 
-<section id="v-lab">
-  <h2>Drop a player into any slam draw</h2>
-  <p class="lede">Pick a player and a moment in their career, then send them through a full slam in another season —
-  seven rounds, finishing against that year's best. Every match is played out point by point.</p>
-  <div class="grid2">
-    <div class="panel">
-      <div class="kicker" style="margin-bottom:10px">Player</div>
-      <div class="toolbar" style="margin-bottom:8px">
-        <input type="text" id="labPlayer" list="pList" value="Sinner J.">
-      </div>
-      <div class="toolbar">
-        <div class="seg" id="labWin"><button data-w="peak" class="on">At their best</button><button data-w="year">In a year…</button></div>
-        <input type="range" id="labYearSlider" min="2000" max="2026" value="2026" style="display:none;width:150px">
-        <span class="note num" id="labYearLbl" style="margin:0"></span>
-      </div>
-      <div class="toolbar" style="margin-top:8px">
-        <div class="seg" id="labSurf"><button data-s="hard" class="on">Hard</button><button data-s="clay">Clay</button><button data-s="grass">Grass</button></div>
-        <div class="seg cSeg" title="Clutch-aware: break points use the fitted break-point shift plus each player's pressure offset. Flat: every point at the normal rate."><button data-c="on" class="on">Clutch-aware</button><button data-c="off">Flat points</button></div>
-      </div>
-      <div id="subjCard" style="margin-top:14px"></div>
-      <div class="kicker" style="margin:24px 0 6px">Title chance, season by season</div>
-      <svg id="labSeasons" width="100%" height="150" viewBox="0 0 320 150"></svg>
-      <div class="note" style="margin-top:2px">tap a year to set the draw</div>
-    </div>
-    <div class="panel">
-      <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
-        <div class="big" id="labProb">—</div>
-        <div style="color:var(--ink2);font-size:14px;max-width:32ch" id="labCaption"></div>
-      </div>
-      <div id="labDraw" style="margin-top:18px"></div>
-    </div>
-  </div>
-</section>
-
 <section id="v-slam">
   <h2>The All-Time Slam</h2>
   <p class="lede">Thirty-two greats, each at the peak of their powers, thrown into one draw.
@@ -433,43 +398,6 @@ function matchProb(pa,pb,bo5,paBp,pbBp){
   const s=.5*(setProb(pa,pb,true,paBp,pbBp)+setProb(pa,pb,false,paBp,pbBp));
   return bo5? s**3*(1+3*(1-s)+6*(1-s)**2) : s**2*(1+2*(1-s));}
 /* ERA_DP_END */
-const GAUNT=[["51-100","R128 · vs ranks 51–100"],["21-50","R64 · vs ranks 21–50"],["21-50","R32 · vs ranks 21–50"],
-             ["11-20","R16 · vs ranks 11–20"],["5-10","Quarters · vs ranks 5–10"],["3-4","Semis · vs ranks 3–4"],["1-2","Final · vs the top 2"]];
-function bandSkills(season,band,exclude,surface){
-  const ros=DATA.rosters[season]||[];
-  const [lo,hi]=band.split("-").map(Number);
-  if(hi<=10){
-    const rows=ros.filter(r=>r[1]>=lo&&r[1]<=hi&&r[0]!==exclude);
-    if(rows.length){
-      let s=0,r=0,ks=0,kr=0;
-      rows.forEach(rw=>{const d=DATA.deltas[rw[0]]||[0,0,0,0],k=kapOf(rw[0]);
-        s+=rw[2]+(surface==="clay"?d[0]:surface==="grass"?d[2]:0);
-        r+=rw[3]+(surface==="clay"?d[1]:surface==="grass"?d[3]:0);
-        ks+=k[0];kr+=k[1];});
-      const n=rows.length;
-      return [s/n, r/n, ks/n, kr/n];
-    }
-  }
-  const st=(DATA.strata[season]||{})[band];
-  if(!st)return [0,0,0,0];
-  const v=st[surface==="clay"?"c":surface==="grass"?"g":"h"]||st.h;
-  const k=st.k||[0,0];
-  return v?[v[0],v[1],k[0],k[1]]:[0,0,0,0];
-}
-function gauntlet(subjS,subjR,season,exclude,surface,subjK){
-  surface=surface||"hard";subjK=subjK||[0,0];
-  let path=1;const rounds=[];
-  for(const [band,label] of GAUNT){
-    const [os,or_,oks,okr]=bandSkills(season,band,exclude,surface);
-    const za=GAMMA+BBO5+(subjS-or_)/ES, zb=GAMMA+BBO5+(os-subjR)/ES;
-    const pm=clutchOn
-      ? matchProb(sig(za),sig(zb),true,sig(za+GBP+(subjK[0]-okr)/ES),sig(zb+GBP+(oks-subjK[1])/ES))
-      : matchProb(sig(za),sig(zb),true);
-    path*=pm;rounds.push({label,pm,band});
-  }
-  return {title:path,rounds};
-}
-
 /* ---------- player lookups ---------- */
 /* ERA_SURFACE_START */
 const SURFACE_LABEL={hard:"Hard",clay:"Clay",grass:"Grass"};
@@ -670,82 +598,6 @@ function drawPeaks(){
 drawPeaks();
 setRatingSurface("hard");
 
-/* ---------- slam draw ---------- */
-let labMode="peak",labSeason=2025,labSurf="hard";
-const ROUNDS=["R128","R64","R32","R16","QF","SF","F"];
-E("labWin").querySelectorAll("button").forEach(b=>b.onclick=()=>{labMode=b.dataset.w;
-  E("labWin").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
-  E("labYearSlider").style.display=labMode==="year"?"":"none";runLab();});
-E("labSurf").querySelectorAll("button").forEach(b=>b.onclick=()=>{labSurf=b.dataset.s;
-  E("labSurf").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));runLab();});
-E("labPlayer").addEventListener("change",runLab);
-E("labYearSlider").oninput=runLab;
-function oppText(season,band,exclude){
-  const [lo,hi]=band.split("-").map(Number);
-  if(hi<=10){
-    const rows=(DATA.rosters[String(season)]||[]).filter(r=>r[1]>=lo&&r[1]<=hi&&r[0]!==exclude);
-    if(rows.length){const names=rows.slice(0,3).map(r=>r[0]).join(" · ");
-      return rows.length>3?names+" …":names;}
-  }
-  return `a player ranked ${lo}–${hi}`;
-}
-function runLab(){
-  const p=E("labPlayer").value.trim();
-  E("labYearLbl").textContent=labMode==="year"?E("labYearSlider").value:"";
-  const w0=windowSkills(p,labMode,E("labYearSlider").value);
-  if(!w0){E("subjCard").innerHTML=`<span class="note">no data for “${p}” — pick a name from the list</span>`;
-    E("labProb").textContent="—";E("labDraw").innerHTML="";E("labSeasons").innerHTML="";E("labCaption").textContent="";return;}
-  const adj=surfaceSkills(p,w0,labSurf), w={...w0,s:adj.s,r:adj.r};
-  E("subjCard").innerHTML=`<div class="subcard">${p}</div><div class="note" style="margin-top:2px">${w0.label} · ${SURFACE_LABEL[labSurf]} rating</div>
-    <div class="skl">
-      <div><div class="note">SERVE</div><div class="v" style="color:var(--hard)">${fmt1(w.s)}</div></div>
-      <div><div class="note">RETURN</div><div class="v" style="color:var(--clay)">${fmt1(w.r)}</div></div>
-      <div><div class="note">OVERALL</div><div class="v">${fmt1(+(w.s+w.r).toFixed(1))}</div></div></div>`;
-  const g=gauntlet(w.s,w.r,String(labSeason),p,labSurf,kapOf(p));
-  E("labProb").innerHTML=(g.title*100).toFixed(1)+"<small>%</small>";
-  E("labCaption").textContent=`chance ${p} (${w0.label}) wins a slam on ${labSurf} against the ${labSeason} field`;
-  // the draw: survival funnel — chance of reaching each round, and of winning it
-  let reach=1;
-  const rows=g.rounds.map((r,i)=>{
-    const html=`<div class="drow">
-      <div class="rn">${ROUNDS[i]}</div>
-      <div class="op">vs ${oppText(labSeason,r.band,p)}</div>
-      <div class="fun"><i style="width:0%" data-w="${(reach*100).toFixed(1)}"></i></div>
-      <div class="wv">${(r.pm*100).toFixed(0)}%</div>
-    </div>`;
-    reach*=r.pm;
-    return html;
-  });
-  rows.push(`<div class="drow title-row">
-    <div class="rn">🏆</div><div class="op">Lifts the trophy</div>
-    <div class="fun"><i style="width:0%" data-w="${(g.title*100).toFixed(1)}"></i></div>
-    <div class="wv">${(g.title*100).toFixed(1)}%</div></div>`);
-  E("labDraw").innerHTML=`<div class="dhead"><div>round</div><div>opponent</div><div>makes it this far</div><div>wins it</div></div>`+rows.join("");
-  requestAnimationFrame(()=>E("labDraw").querySelectorAll(".fun i").forEach(b=>b.style.width=b.dataset.w+"%"));
-  drawSeasonBars(w,p);
-}
-function drawSeasonBars(w,p){
-  const svg=E("labSeasons");svg.innerHTML="";
-  const W=320,H=150,M={l:6,r:6,t:16,b:18};
-  const seasons=Object.keys(DATA.strata).map(Number).filter(y=>y>=2001).sort();
-  const curve=seasons.map(y=>({y,v:gauntlet(w.s,w.r,String(y),p,labSurf,kapOf(p)).title}));
-  const vmax=Math.max(...curve.map(c=>c.v))||1;
-  const bw=(W-M.l-M.r)/seasons.length;
-  curve.forEach((c,i)=>{
-    const x=M.l+i*bw, h=Math.max(2,c.v/vmax*(H-M.t-M.b)), sel=c.y===labSeason;
-    const b=el("rect",{x:x+1,y:H-M.b-h,width:bw-2,height:h,rx:2,
-      fill:sel?"var(--clay)":"var(--ink)",opacity:sel?1:.22,style:"cursor:pointer;transition:.15s"},svg);
-    b.onmouseenter=e=>{b.setAttribute("opacity",sel?1:.5);showTip(`<b>${c.y}</b> · title chance ${(c.v*100).toFixed(1)}%`,e.clientX,e.clientY);};
-    b.onmouseleave=()=>{b.setAttribute("opacity",sel?1:.22);hideTip();};
-    b.onclick=()=>{labSeason=c.y;runLab();};
-    if(sel){const t=el("text",{x:x+bw/2,y:H-M.b-h-5,"text-anchor":"middle",fill:"var(--clay)","font-size":10},svg);
-      t.textContent=(c.v*100).toFixed(0)+"%";}
-  });
-  [2005,2015,2025].forEach(y=>{const i=seasons.indexOf(y);if(i<0)return;
-    const t=el("text",{x:M.l+i*bw+bw/2,y:H-4,"text-anchor":"middle"},svg);t.textContent=y;});
-}
-runLab();
-
 /* ---------- head to head ---------- */
 function h2hProb(pA,wA,pB,wB,surface,bo5){
   const a=surfaceSkills(pA,wA,surface),b=surfaceSkills(pB,wB,surface);
@@ -806,7 +658,7 @@ function runH2H(){
 function setClutch(on){clutchOn=on;
   document.querySelectorAll(".cSeg").forEach(seg=>seg.querySelectorAll("button")
     .forEach(b=>b.classList.toggle("on",(b.dataset.c==="on")===on)));
-  runLab();runH2H();if(slam.entrants)playSlam();}
+  runH2H();if(slam.entrants)playSlam();}
 document.querySelectorAll(".cSeg button").forEach(b=>b.onclick=()=>setClutch(b.dataset.c==="on"));
 runH2H();
 
