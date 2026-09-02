@@ -188,7 +188,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
   <h2>Ratings over time</h2>
   <p class="lede">A player's rating says how they'd fare against the average tour player of the whole period —
   0 is that average. Serve and return are rated separately. <span id="trajSurfaceNote">Hard, clay and grass
-  ratings are averaged equally; toggle any surface to change the mix.</span></p>
+  count equally. Surface ratings use career results, and small samples stay closer to a player's overall level.</span></p>
   <div class="panel">
     <div class="toolbar">
       <input type="text" id="pAdd" list="pList" placeholder="add a player…">
@@ -213,12 +213,12 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 
 <section id="v-peaks">
   <h2 id="peakTitle">Best 12-month career peaks</h2>
-  <p class="lede" id="peakIntro">One row per player. Ratings are the equal-weight average of hard, clay and grass;
-  each window is selected on the shared trajectory inferred from matches on every surface.</p>
+  <p class="lede" id="peakIntro">One row per player. Hard, clay and grass count equally, using the same best
+  12-month stretch for every surface mix.</p>
   <div class="peak-explain">
     <div class="kicker">What this view means</div>
-    <div class="formula" id="peakFormula">Peak reference trajectory <span class="plus">+</span> mean selected-surface adjustment <span class="plus">=</span> displayed rating</div>
-    <div class="note" id="peakCaveat">Selected surfaces are weighted equally. Surface effects are career-wide, ridge-shrunk adjustments, so the mix changes ratings and ranking—not the modeled peak window.</div>
+    <div class="formula" id="peakFormula">Best 12-month level across Hard + Clay + Grass, with each surface counting equally</div>
+    <div class="note" id="peakCaveat">Surface ratings draw on a player's full career, and small samples stay closer to their overall level. Changing the mix can change the rating and order, but not the 12-month period shown.</div>
   </div>
   <div class="panel">
     <div class="toolbar">
@@ -229,7 +229,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
         <button data-s="tot" class="on">Overall</button><button data-s="s">Serve</button><button data-s="r">Return</button>
       </div>
     </div>
-    <div class="peakhead"><div>Rank</div><div>Player · surface evidence</div><div>Peak window</div><div>Serve / return</div><div>Rating</div></div>
+    <div class="peakhead"><div>Rank</div><div>Player · matches behind rating</div><div>Best 12 months</div><div>Serve / return</div><div>Rating</div></div>
     <div class="rows" id="peakRows"></div>
   </div>
 </section>
@@ -237,13 +237,13 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 <section id="v-eras">
   <h2>Compare two seasons</h2>
   <p class="lede">How strong was the field, and who was in it? Pick any two seasons and read them side by side.
-  <span id="eraSurfaceIntro">Field ratings average hard, clay and grass equally.</span></p>
+  <span id="eraSurfaceIntro">Hard, clay and grass each count equally in the field ratings.</span></p>
   <div class="panel">
     <div class="toolbar">
       <div class="seg surfMix" id="eraSurf" aria-label="Surfaces included in era ratings">
         <button data-s="hard" class="on" aria-pressed="true">Hard</button><button data-s="clay" class="on" aria-pressed="true">Clay</button><button data-s="grass" class="on" aria-pressed="true">Grass</button>
       </div>
-      <span class="note" id="eraSurfaceNote" style="margin:0">Hard + Clay + Grass · equal weight</span>
+      <span class="note" id="eraSurfaceNote" style="margin:0">Hard + Clay + Grass · each counts equally</span>
     </div>
     <div class="toolbar" style="justify-content:space-between">
       <div class="toolbar" style="margin:0">
@@ -470,12 +470,12 @@ function refreshRatingSurfaceMix(){
   ["trajSurf","peakSurf","eraSurf"].forEach(id=>E(id).querySelectorAll("button").forEach(b=>{
     const on=ratingSurfaces.has(b.dataset.s);b.classList.toggle("on",on);b.setAttribute("aria-pressed",on);
   }));
-  E("trajSurfaceNote").textContent=`${mix} ratings are averaged equally. Clay and grass use each player's fitted, ridge-shrunk adjustment to the shared trajectory.`;
-  E("peakIntro").textContent=`One row per player. ${mix} ratings are averaged equally; each window is selected on the shared trajectory inferred from matches on every surface.`;
-  E("peakFormula").innerHTML=`Peak reference trajectory <span class="plus">+</span> mean ${mix} adjustment <span class="plus">=</span> displayed rating`;
-  E("peakCaveat").textContent="Selected surfaces are weighted equally. Surface effects are career-wide, ridge-shrunk adjustments, so the mix changes ratings and ranking—not the modeled peak window.";
-  E("eraSurfaceIntro").textContent=`Field ratings average ${mix} equally.`;
-  E("eraSurfaceNote").textContent=`${mix} · equal weight`;
+  E("trajSurfaceNote").textContent=`Every selected surface counts equally: ${mix}. Surface ratings use career results, and small samples stay closer to a player's overall level.`;
+  E("peakIntro").textContent=`One row per player. Every selected surface counts equally: ${mix}. The same best 12-month stretch is used for every mix.`;
+  E("peakFormula").textContent=`Best 12-month level across ${mix}, with each selected surface counting equally`;
+  E("peakCaveat").textContent="Surface ratings draw on a player's full career, and small samples stay closer to their overall level. Changing the mix can change the rating and order, but not the 12-month period shown.";
+  E("eraSurfaceIntro").textContent=`Field ratings use ${mix}, with each selected surface counting equally.`;
+  E("eraSurfaceNote").textContent=`${mix} · each counts equally`;
   drawTraj();drawPeaks();drawErasTab();
 }
 function toggleRatingSurface(surface){
@@ -622,7 +622,7 @@ function peakEvidence(pk){
   const windowMatches=counts.reduce((sum,v)=>sum+v.window,0);
   const careerMatches=counts.reduce((sum,v)=>sum+v.career,0);
   const effect=compositeSkills(pk.p,{s:0,r:0},surfaces).tot;
-  return {text:`${windowMatches} selected-surface matches in window · ${careerMatches} career · mix effect ${effect>=0?"+":""}${fmt1(effect)}`,
+  return {text:`${windowMatches.toLocaleString()} matches on these surfaces during the peak · ${careerMatches.toLocaleString()} over the career · surface choice changes rating by ${effect>=0?"+":""}${fmt1(effect)}`,
           warn:surfaces.some((s,i)=>s!=="hard"&&counts[i].career<10)};
 }
 function drawPeaks(){
@@ -632,7 +632,7 @@ function drawPeaks(){
   E("peakRows").innerHTML=rows.map((r,i)=>{const ev=peakEvidence(r);return `<div class="row" data-p="${r.p}">
     <div class="rk">${String(i+1).padStart(2,"0")}</div>
     <div class="nm">${r.p}<small class="${ev.warn?"warn":""}">${ev.text}</small></div>
-    <div class="yr">${r.win}<small>modeled peak window</small></div>
+    <div class="yr">${r.win}<small>best 12-month stretch</small></div>
     <div class="dbar"><div class="mid"></div>
       <div class="s" style="width:${Math.max(0,r.s)/mx*50}%"></div>
       <div class="r" style="width:${Math.max(0,r.r)/mx*50}%"></div></div>
