@@ -153,6 +153,14 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 .bs{flex:none;font-size:11.5px}
 .bchamp{position:absolute;text-align:center;font-family:var(--sans);font-size:13px;line-height:1.4}
 .slamName{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.bmatch.ph{border-style:dashed;opacity:.5;box-shadow:none}
+.bmatch.ph .bp{color:var(--muted)}
+.go{font-family:var(--sans);font-weight:800;font-size:13.5px;letter-spacing:.06em;text-transform:uppercase;
+  border:0;border-radius:999px;padding:10px 24px;background:var(--ball);color:var(--ink);cursor:pointer;
+  box-shadow:0 3px 0 color-mix(in srgb,var(--ink) 35%,transparent);transition:.12s}
+.go:hover{transform:translateY(-1px);box-shadow:0 4px 0 color-mix(in srgb,var(--ink) 35%,transparent)}
+.go:active{transform:translateY(2px);box-shadow:0 1px 0 color-mix(in srgb,var(--ink) 35%,transparent)}
+.go:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 </style>
 </head>
 <body>
@@ -299,12 +307,12 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 <section id="v-slam">
   <h2>The All-Time Slam</h2>
   <p class="lede">Thirty-two greats, each at the peak of their powers, thrown into one draw.
-  Pick a surface, shake the hat, and watch it play out round by round — every match simulated
-  point → game → set → match. Tap any name in the first round to put someone else in their place.</p>
+  Pick a surface, read the matchups, tap any first-round name to put someone else in their place —
+  then hit Simulate and watch it play out, every match point → game → set → match.</p>
   <div class="toolbar" style="margin-bottom:6px">
     <div class="seg" id="slamSurf"><button data-s="hard" class="on">Hard</button><button data-s="clay">Clay</button><button data-s="grass">Grass</button></div>
     <span class="chip" id="slamNew">🎲 New draw</span>
-    <span class="chip" id="slamAgain">↻ Play it again</span>
+    <button class="go" id="slamGo">🎾 Simulate</button>
   </div>
   <div id="slamReplace" style="display:none;margin:10px 0" class="note">
     Replacing <b id="slamOutName"></b> with
@@ -312,7 +320,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
     <span class="chip" id="slamCancel">cancel</span>
     <span id="slamReplaceHint"></span>
   </div>
-  <div id="slamChamp" style="margin:14px 0 6px"></div>
+  <div id="slamChamp" aria-live="polite" style="margin:14px 0 6px"></div>
   <div id="slamBracket"></div>
   <div class="note">hover (or tap) any match for the full score · swipe sideways to follow the draw</div>
 </section>
@@ -747,42 +755,54 @@ function slamPlayFn(a,b,rng){
 function newSlamDraw(){
   const pool=DATA.peaks.filter(pk=>pk.nq>=8).slice(0,64).map(pk=>pk.p);
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
-  slam.entrants=pool.slice(0,32);slam.replacing=null;E("slamReplace").style.display="none";playSlam();
+  slam.entrants=pool.slice(0,32);slam.replacing=null;E("slamReplace").style.display="none";resetSlam();
 }
 function playSlam(){slam.result=playBracket(slam.entrants,slamPlayFn,Math.random);renderSlam();}
+function resetSlam(){slam.result=null;hideTip();renderSlam();}
 function renderSlam(){
-  const res=slam.result,fin=res.rounds[res.rounds.length-1][0];
-  const runnerUp=fin.winner===fin.a?fin.b:fin.a;
-  E("slamChamp").innerHTML=`<div class="big">🏆 ${res.champion}</div>
-    <div class="note" style="margin-top:2px">d. ${runnerUp} <span class="num">${fin.score}</span> in the final · at their peaks, on ${SURFACE_LABEL[slam.surface].toLowerCase()}, best of 5</div>`;
+  const res=slam.result;
+  if(res){
+    const fin=res.rounds[res.rounds.length-1][0],runnerUp=fin.winner===fin.a?fin.b:fin.a;
+    E("slamChamp").innerHTML=`<div class="big">🏆 ${res.champion}</div>
+      <div class="note" style="margin-top:2px">d. ${runnerUp} <span class="num">${fin.score}</span> in the final · at their peaks, on ${SURFACE_LABEL[slam.surface].toLowerCase()}, best of 5</div>`;
+  }else{
+    E("slamChamp").innerHTML=`<div class="note">Draw ready · review the first-round matchups, make any swaps, then simulate.</div>`;
+  }
   const CW=170,CH=42,GX=36,RH=48,PAD=24;
-  const nR=res.rounds.length;
+  const nR=SLAM_ROUNDS.length;
+  const rounds=res?res.rounds:Array.from({length:nR},(_,c)=>
+    Array.from({length:16>>c},(_,k)=>c?null:{a:slam.entrants[k*2],b:slam.entrants[k*2+1]}));
   const colX=c=>c*(CW+GX);
   const cy=(c,k)=>PAD+RH*(Math.pow(2,c)*(k+0.5));
   let cells="",lines="",heads="";
-  res.rounds.forEach((games,c)=>{
-    heads+=`<div class="bhead" style="left:${colX(c)}px">${SLAM_ROUNDS[c+(SLAM_ROUNDS.length-nR)]||"Round"}</div>`;
+  rounds.forEach((games,c)=>{
+    heads+=`<div class="bhead" style="left:${colX(c)}px">${SLAM_ROUNDS[c]}</div>`;
     games.forEach((g,k)=>{
       const x=colX(c),y=cy(c,k);
-      const row=p=>{
-        const w=p===g.winner;
-        const nm=c===0?`<span class="slamName" data-p="${p}">${p}</span>`:p;
-        return `<div class="bp${w?" w":""}${w&&g.upset?" u":""}"><span class="bn">${nm}${w&&g.upset?" ⚡":""}</span><span class="bs num">${w?g.setsW:g.setsL}</span></div>`;
-      };
-      cells+=`<div class="bmatch" data-c="${c}" data-k="${k}" style="left:${x}px;top:${y-CH/2}px;width:${CW}px">${row(g.a)}${row(g.b)}</div>`;
+      if(!g){
+        cells+=`<div class="bmatch ph" aria-label="Awaiting winners" style="left:${x}px;top:${y-CH/2}px;width:${CW}px"><div class="bp"><span class="bn">&nbsp;</span></div><div class="bp"><span class="bn">&nbsp;</span></div></div>`;
+      }else{
+        const row=p=>{
+          const w=p===g.winner;
+          const nm=c===0?`<span class="slamName" data-p="${p}">${p}</span>`:p;
+          const sets=g.winner?(w?g.setsW:g.setsL):"";
+          return `<div class="bp${w?" w":""}${w&&g.upset?" u":""}"><span class="bn">${nm}${w&&g.upset?" ⚡":""}</span><span class="bs num">${sets}</span></div>`;
+        };
+        cells+=`<div class="bmatch" data-c="${c}" data-k="${k}" style="left:${x}px;top:${y-CH/2}px;width:${CW}px">${row(g.a)}${row(g.b)}</div>`;
+      }
       if(c<nR-1){
         const xm=x+CW+GX/2;
         lines+=`<path d="M ${x+CW} ${y} H ${xm} V ${cy(c+1,k>>1)} H ${colX(c+1)}"/>`;
-      }else{
+      }else if(res){
         lines+=`<path d="M ${x+CW} ${y} H ${x+CW+GX}"/>`;
         cells+=`<div class="bchamp" style="left:${x+CW+GX+8}px;top:${y-22}px">🏆<br><b>${res.champion}</b></div>`;
       }
     });
   });
-  const W=colX(nR)+150, H=PAD+res.rounds[0].length*RH+8;
+  const W=colX(nR)+150, H=PAD+rounds[0].length*RH+8;
   E("slamBracket").innerHTML=`<div class="bwrap" style="width:${W}px;height:${H}px">
     <svg class="blines" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${lines}</svg>${heads}${cells}</div>`;
-  E("slamBracket").querySelectorAll(".bmatch").forEach(el=>{
+  if(res)E("slamBracket").querySelectorAll(".bmatch").forEach(el=>{
     const g=res.rounds[+el.dataset.c][+el.dataset.k];
     const loser=g.winner===g.a?g.b:g.a;
     const tip=()=>`<b>${g.winner}</b> d. ${loser}${g.upset?" ⚡":""}<br>`+
@@ -801,17 +821,20 @@ function renderSlam(){
     E("slamReplace").style.display="";E("slamPick").value="";E("slamPick").focus();
   });
 }
-E("slamSurf").querySelectorAll("button").forEach(b=>b.onclick=()=>{slam.surface=b.dataset.s;
-  E("slamSurf").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));if(slam.entrants)playSlam();});
+E("slamSurf").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  const changed=slam.surface!==b.dataset.s;slam.surface=b.dataset.s;
+  E("slamSurf").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+  if(changed&&slam.entrants)resetSlam();
+});
 E("slamNew").onclick=newSlamDraw;
-E("slamAgain").onclick=()=>slam.entrants&&playSlam();
+E("slamGo").onclick=()=>slam.entrants&&playSlam();
 E("slamCancel").onclick=()=>{slam.replacing=null;E("slamReplace").style.display="none";};
 E("slamPick").addEventListener("change",()=>{
   const p=E("slamPick").value.trim();
   if(slam.replacing==null)return;
   if(!peakByPlayer[p]){E("slamReplaceHint").textContent="— pick a name from the list";return;}
   if(slam.entrants.includes(p)){E("slamReplaceHint").textContent="— already in the draw";return;}
-  slam.entrants[slam.replacing]=p;slam.replacing=null;E("slamReplace").style.display="none";playSlam();
+  slam.entrants[slam.replacing]=p;slam.replacing=null;E("slamReplace").style.display="none";resetSlam();
 });
 newSlamDraw();
 </script>
