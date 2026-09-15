@@ -179,6 +179,37 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 .hbar i.warm{background:var(--clay)}.hbar i.cool{background:var(--hard)}.hbar i.green{background:var(--grass)}
 @media(max-width:760px){.rhead{display:none}.rrow{grid-template-columns:28px 1fr 70px}.rrow .hbar,.rrow .v.opt{display:none}}
 .pathwrap{margin-top:14px}
+.howto{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.how{background:var(--paper2);border:1px solid var(--line2);border-radius:12px;padding:12px 14px}
+.how .hk{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.how b{display:block;font-family:var(--serif);font-size:15.5px;font-weight:600;margin-bottom:4px}
+.how p{font-size:12.5px;color:var(--ink2);line-height:1.45;margin:0}
+.hl{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.hlt{background:var(--paper2);border:1px solid var(--line2);border-radius:12px;padding:11px 13px;cursor:pointer;transition:.12s}
+.hlt:hover,.hlt.sel{border-color:var(--ink)}
+.hlt .hk{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hlt .hv{font-family:var(--serif);font-size:24px;font-weight:600;line-height:1.15;margin:3px 0 2px}
+.hlt .hn{font-size:12.5px;font-weight:600;color:var(--ink)}
+.hlt .hw{font-size:11px;color:var(--muted)}
+.tag{display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:6px;padding:2px 7px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+.tag.t4{background:var(--clay);color:#fff}.tag.t3{background:var(--ink);color:var(--paper)}
+.tag.t2{background:var(--paper);border:1px solid var(--line2);color:var(--ink2)}.tag.t1{background:var(--grass);color:#fff}
+.tag.t0{background:var(--paper);border:1px dashed var(--line2);color:var(--muted)}
+.rrow.runs,.rhead.runs{grid-template-columns:32px minmax(190px,1fr) minmax(210px,1.1fr) 130px 180px}
+.rrow.runs .dr .hbar{margin-bottom:5px}
+.rrow.runs .dv{font-size:13px}.rrow.runs .dv b{font-family:var(--mono);font-size:12.5px}
+.rrow.runs .dv small{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.rrow.runs .v{text-align:left}.rrow.runs .v b{font-family:var(--mono);font-size:13px;font-weight:600}
+.rrow.runs .perf .tag{margin-left:0}
+.drow.runs,.dhead.runs{grid-template-columns:46px 1fr 130px 70px 70px}
+.dhead.runs div:nth-last-child(-n+2){text-align:right}
+.drow .wv.own{color:var(--hard)}
+.sum{font-size:13.5px;color:var(--ink2);line-height:1.55;margin:4px 0 12px;max-width:80ch}
+@media(max-width:760px){.howto,.hl{grid-template-columns:1fr 1fr}.rrow.runs{grid-template-columns:28px 1fr 120px}
+  .rrow.runs .fav,.rrow.runs .perf,.rrow.runs .dv small{display:none}
+  .drow.runs,.dhead.runs{grid-template-columns:40px 1fr 56px 56px}.drow.runs .fun,.dhead.runs div:nth-child(3){display:none}}
+@media(max-width:480px){.howto{grid-template-columns:1fr}}
+@media(max-width:760px){.toolbar .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}.toolbar .seg::-webkit-scrollbar{display:none}.seg button{white-space:nowrap;flex:none}}
 .banner{background:var(--paper2);border-left:3px solid var(--clay);border-radius:0 12px 12px 0;padding:12px 16px;font-size:13px;color:var(--ink2);margin-bottom:16px;max-width:80ch}
 .ibar{position:relative;height:12px;background:var(--paper2);border-radius:99px}
 .ibar .rng{position:absolute;top:2px;bottom:2px;background:color-mix(in srgb,var(--ink) 18%,transparent);border-radius:99px}
@@ -385,24 +416,41 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
 </section>
 
 <section id="v-runs">
-  <h2>Title runs, ranked by the draw</h2>
-  <p class="lede">Every tour-level title since 1968 scored two ways. <b>Path difficulty</b> asks how often a standard
-  top-5 player would win that exact draw — each opponent at their rating that quarter, on that surface — so it belongs to
-  the draw, not the champion. <b>Execution</b> asks how far above the model's expectation the champion actually played.</p>
-  <div class="banner">1991 onward uses the point-level model. Before 1991 only results exist, so those runs (marked
-  <span class="badge match">results only</span>) come from a match-level rating that is anchored to each era's rank 11–50
-  player; compare them among themselves rather than against the point-level runs.</div>
+  <h2>Title runs</h2>
+  <p class="lede">Every tour title since 1968, judged three ways: how tough the draw was, how big a favourite the
+  champion was going in, and how well he actually played once there. The draw score belongs to the tournament;
+  the other two belong to the player.</p>
+  <div class="howto">
+    <div class="how"><div class="hk">1 · Draw</div><b>How tough was the path?</b>
+      <p>We send a fixed yardstick player — the average world No. 3–7 of 2000–25 — through the champion's exact
+      draw: the same opponents, at their level that quarter, on that surface. His chance of winning the whole thing
+      is the draw score. Roughly: <i>1 in 5</i> is kind, <i>1 in 20</i> is tough, <i>1 in 50</i> or longer is brutal.</p></div>
+    <div class="how"><div class="hk">2 · Favourite</div><b>How likely was <em>he</em> to win it?</b>
+      <p>The champion's own chance of winning that same draw, from his rating going in. Around 60% means he was
+      the man to beat; under 10% means almost nobody saw it coming.</p></div>
+    <div class="how"><div class="hk">3 · Performance</div><b>How well did he play?</b>
+      <p>How far above his own usual level he won points through the run, plus the sets and games he dropped.
+      Champions nearly always play above themselves, so the label compares him with other champions at the same
+      level of event.</p></div>
+  </div>
   <div class="panel">
     <div class="toolbar">
       <div class="seg" id="runLevel"><button data-l="G" class="on">Slams</button><button data-l="M">Masters</button><button data-l="F">Tour Finals</button><button data-l="A">250 / 500</button><button data-l="all">All titles</button></div>
-      <div class="seg" id="runOut"><button data-o="W" class="on">Champions</button><button data-o="F">Beaten finalists</button></div>
-      <div class="seg" id="runSort"><button data-s="hard" class="on">Hardest path</button><button data-s="easy">Easiest path</button><button data-s="upset">Unlikeliest</button><button data-s="dom">Most dominant</button></div>
-      <input type="text" id="runQ" placeholder="filter by player or event…">
+      <div class="seg" id="runOut"><button data-o="W" class="on">Champions</button><button data-o="F">Beaten slam finalists</button></div>
+      <input type="text" id="runQ" placeholder="find a player or event…">
       <div class="toolbar" style="margin:0" title="Only runs from this season on"><span class="chip">from <b class="num" id="runYear">1991</b></span><input type="range" id="runSlider" min="1968" max="2020" value="1991" style="width:170px"></div>
     </div>
-    <div class="rhead"><div>#</div><div>Run</div><div>Path difficulty</div><div>Std top-5 odds</div><div>Own odds</div><div>Sets lost</div></div>
+    <div class="hl" id="runHl"></div>
+    <div class="toolbar" style="margin:14px 0 10px">
+      <span class="note" style="margin:0">Rank by</span>
+      <div class="seg" id="runSort"><button data-s="hard" class="on">Toughest draw</button><button data-s="easy">Kindest draw</button><button data-s="upset">Biggest surprise</button><button data-s="dom">Best performance</button></div>
+      <span class="note" id="runNote" style="margin:0"></span>
+    </div>
+    <div class="rhead runs"><div>#</div><div>Run</div><div>Draw · yardstick's odds</div><div>Favourite</div><div>Performance</div></div>
     <div id="runRows"></div>
-    <div class="note" id="runNote"></div>
+    <div class="note" id="runTierNote" hidden>Runs marked <span class="badge match">results only</span> are from before 1991,
+    when only match results exist: they use a match-level rating anchored to each era's No. 11–50 player. Judge them
+    against each other rather than against the point-model runs.</div>
     <div class="pathwrap" id="runPath"></div>
   </div>
 </section>
@@ -1007,12 +1055,23 @@ function setEraFrom(y){era.from=y;["run","goat"].forEach(k=>{E(k+"Slider").value
   E("goatEraNote").textContent=eraNote();runState.sel=null;drawRuns();
   spaceCells=null;rivDefault();drawGoat();if(E("gv-space").classList.contains("on"))drawSpace();}
 const LEVEL_NAME={G:"Slam",M:"Masters",F:"Tour Finals",A:"250 / 500",O:"Olympics"};
+const LEVEL_KIND={G:"slam",M:"Masters",F:"Tour Finals",A:"250 / 500"};
 const runState={lv:"G",out:"W",sort:"hard",q:"",sel:null};
 function runSeg(id,key,attr){E(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{runState[key]=b.dataset[attr];
   E(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));runState.sel=null;drawRuns();});}
 runSeg("runLevel","lv","l");runSeg("runOut","out","o");runSeg("runSort","sort","s");
 E("runQ").addEventListener("input",()=>{runState.q=E("runQ").value.trim().toLowerCase();drawRuns();});
-const oddsTxt=p=>p>=.5?"even":"1 in "+Math.round(1/p).toLocaleString();
+const oddsTxt=p=>p>=.5?"better than even":"1 in "+Math.round(1/p).toLocaleString();
+const pctTxt=p=>(p*100).toFixed(p<.01?2:p<.1?1:0)+"%";
+/* percentiles within (level, tier, outcome): a slam draw is judged against slam draws, a 250 against 250s */
+const lvGroup=lv=>lv==="O"?"A":lv;
+const runGroups=(()=>{const g={};RUNS.forEach(r=>{const k=lvGroup(r.lv)+"|"+r.tier+"|"+r.out;(g[k]??={D:[],z:[]});g[k].D.push(r.D);if(r.z!=null)g[k].z.push(r.z);});
+  for(const k in g){g[k].D.sort((a,b)=>a-b);g[k].z.sort((a,b)=>a-b);}return g;})();
+function pctIn(arr,v){if(!arr.length)return null;let lo=0,hi=arr.length;while(lo<hi){const m=(lo+hi)>>1;if(arr[m]<v)lo=m+1;else hi=m;}return Math.min(99,Math.round(lo/arr.length*100));}
+RUNS.forEach(r=>{const g=runGroups[lvGroup(r.lv)+"|"+r.tier+"|"+r.out];r.dp=pctIn(g.D,r.D);r.zp=r.z==null?null:pctIn(g.z,r.z);});
+const drawWord=p=>p>=85?["brutal","t4"]:p>=60?["tough","t3"]:p>=30?["average","t2"]:["kind","t1"];
+const favWord=p=>p>=.5?"the man to beat":p>=.25?"among the favourites":p>=.1?"an outsider":"a long shot";
+const perfWord=p=>p==null?["no point stats","t0"]:p>=80?["dominant","t4"]:p>=45?["strong","t3"]:p>=15?["solid","t2"]:["scraped through","t1"];
 function runRows(){
   let rows=RUNS.filter(r=>r.yr>=era.from&&r.out===runState.out&&(runState.lv==="all"||r.lv===runState.lv||(runState.lv==="A"&&r.lv==="O")));
   if(runState.out==="F")rows=rows.filter(r=>r.lv==="G");
@@ -1020,33 +1079,52 @@ function runRows(){
   const key={hard:r=>-r.D,easy:r=>r.D,upset:r=>r.pown,dom:r=>-(r.z==null?-99:r.z)}[runState.sort];
   return rows.sort((a,b)=>key(a)-key(b));
 }
+function drawRunHl(rows){
+  if(!rows.length){E("runHl").innerHTML="";return;}
+  const best=(arr,f)=>arr.reduce((a,b)=>f(b)>f(a)?b:a);
+  const withZ=rows.filter(r=>r.z!=null);
+  const tiles=[["Toughest draw",best(rows,r=>r.D),r=>oddsTxt(r.pref),"for the yardstick player"],
+    ["Kindest draw",best(rows,r=>-r.D),r=>oddsTxt(r.pref),"for the yardstick player"],
+    ["Biggest surprise",best(rows,r=>-r.pown),r=>pctTxt(r.pown),"his own chance going in"],
+    withZ.length?["Best performance",best(withZ,r=>r.z),r=>"+"+r.z.toFixed(1),"above his usual level"]:null].filter(Boolean);
+  E("runHl").innerHTML=tiles.map(([k,r,f,why])=>`<div class="hlt${runState.sel===r.id?" sel":""}" data-id="${r.id}"><div class="hk">${k}</div><div class="hv">${f(r)}</div><div class="hn">${r.p} · ${r.ev} ${r.yr}</div><div class="hw">${why}</div></div>`).join("");
+  E("runHl").querySelectorAll(".hlt").forEach(el=>el.onclick=()=>{runState.sel=el.dataset.id;drawRuns();E("runPath").scrollIntoView({behavior:"smooth",block:"nearest"});});
+}
 function drawRuns(){
-  const rows=runRows(),top=rows.slice(0,60),mx=Math.max(...rows.map(r=>r.D),1);
-  const what=runState.out==="W"?"titles":"beaten finalists";
-  E("runNote").textContent=`${rows.length} ${what} match the filters · showing ${top.length} · click a run for the round-by-round path`;
-  E("runRows").innerHTML=top.map((r,i)=>`<div class="rrow${runState.sel===r.id?" sel":""}" data-id="${r.id}">
+  const rows=runRows(),top=rows.slice(0,60),champ=runState.out==="W";
+  E("runNote").textContent=`${rows.length} ${champ?"titles":"beaten finalists"} match · showing ${top.length} · tap a run for the round-by-round path`;
+  drawRunHl(rows);
+  E("runRows").innerHTML=top.map((r,i)=>{const [dw,dc]=drawWord(r.dp),[pw,pc]=perfWord(r.zp),kind=LEVEL_KIND[lvGroup(r.lv)];
+    return `<div class="rrow runs${runState.sel===r.id?" sel":""}" data-id="${r.id}">
     <div class="rk">${String(i+1).padStart(2,"0")}</div>
     <div class="nm">${r.p}${r.tier==="match"?'<span class="badge match">results only</span>':""}<small>${r.ev} ${r.yr} · ${LEVEL_NAME[r.lv]||r.lv} · ${r.sf} · ${r.n} matches${r.wo?" ("+r.wo+" walkover)":""}${r.top10?" · "+r.top10+" top-10 opponents":""}</small></div>
-    <div class="hbar"><i class="${r.lv==="G"?"warm":"cool"}" style="width:${r.D/mx*100}%"></i></div>
-    <div class="v">${oddsTxt(r.pref)}<small>${r.D.toFixed(2)} nats</small></div>
-    <div class="v opt">${(r.pown*100).toFixed(r.pown<.01?2:1)}%<small>${r.z==null?"no point stats":"surplus z "+(r.z>0?"+":"")+r.z.toFixed(1)}</small></div>
-    <div class="v opt">${r.sd}<small>${r.gd} games</small></div></div>`).join("");
-  E("runRows").querySelectorAll(".rrow").forEach(el=>el.onclick=()=>{runState.sel=el.dataset.id;drawRuns();drawRunPath();});
+    <div class="dr"><div class="hbar"><i class="${r.lv==="G"?"warm":"cool"}" style="width:${Math.max(r.dp,2)}%"></i></div>
+      <div class="dv"><b>${oddsTxt(r.pref)}</b><span class="tag ${dc}">${dw}</span><small>tougher than ${r.dp}% of ${r.tier==="match"?"results-only ":""}${kind} ${champ?"draws":"finalist paths"}</small></div></div>
+    <div class="v fav"><b>${pctTxt(r.pown)}</b><small>${favWord(r.pown)}</small></div>
+    <div class="v perf"><span class="tag ${pc}">${pw}</span><small>${r.z==null?"":(r.z>0?"+":"")+r.z.toFixed(1)+" vs his level · "}${r.sd} set${r.sd===1?"":"s"} dropped</small></div></div>`;}).join("");
+  E("runTierNote").hidden=!top.some(r=>r.tier==="match");
+  E("runRows").querySelectorAll(".rrow").forEach(el=>el.onclick=()=>{runState.sel=el.dataset.id;drawRuns();});
   drawRunPath();
 }
 function drawRunPath(){
   const r=RUNS.find(x=>x.id===runState.sel);
   if(!r){E("runPath").innerHTML="";return;}
-  if(!r.path.length){E("runPath").innerHTML=`<div class="card"><h3>${r.p} · ${r.ev} ${r.yr}</h3><div class="note" style="margin:0">Round-by-round paths are kept for slams, Masters and Tour Finals on the results-only tier. Whole path: ${oddsTxt(r.pref)} for the standard player.</div></div>`;return;}
-  const rows=r.path.map(([rd,op,rk,elo,pr,po,sc,lost,wo,ret])=>`<div class="drow${lost?" title-row":""}">
+  const fin=r.out==="F",kind=LEVEL_KIND[lvGroup(r.lv)],[dw]=drawWord(r.dp),[pw]=perfWord(r.zp);
+  const summary=`<div class="sum">Multiply the yardstick player's chances round by round and he ${fin?"reaches this final":"wins this draw"}
+    <b>${oddsTxt(r.pref)}</b> — a <b>${dw}</b> path, tougher than ${r.dp}% of ${r.tier==="match"?"results-only ":""}${kind} ${fin?"finalist paths":"draws"}.
+    ${r.p} himself was <b>${pctTxt(r.pown)}</b> going in: ${favWord(r.pown)}.${r.z==null?"":` He won points <b>${(r.z>0?"+":"")+r.z.toFixed(1)}</b>
+    above his own usual level and dropped ${r.sd} set${r.sd===1?"":"s"} and ${r.gd} games — <b>${pw}</b> for a ${kind} ${fin?"finalist":"champion"}.`}</div>`;
+  if(!r.path.length){E("runPath").innerHTML=`<div class="card"><h3>${r.p} · ${r.ev} ${r.yr}</h3>${summary}<div class="note" style="margin:0">Round-by-round detail is kept for slams, Masters and Tour Finals on the results-only tier.</div></div>`;return;}
+  const first=r.p.split(" ")[0];
+  const rows=r.path.map(([rd,op,rk,elo,pr,po,sc,lost,wo,ret])=>`<div class="drow runs${lost?" title-row":""}">
     <div class="rn">${rd}</div>
-    <div class="op">${op}${rk?` <small style="display:inline">(#${rk})</small>`:""}${wo?'<span class="badge">walkover</span>':""}${ret?'<span class="badge">ret.</span>':""}<small>${lost?"lost ":""}${sc||""}${elo!=null?" · opponent rating "+fmt1(elo):""}</small></div>
+    <div class="op">${op}${rk?` <small style="display:inline">(#${rk})</small>`:""}${wo?'<span class="badge">walkover</span>':""}${ret?'<span class="badge">ret.</span>':""}<small>${lost?"lost ":""}${sc||""}${elo!=null?" · rated "+fmt1(elo):""}</small></div>
     <div class="fun"><i style="width:${(1-pr)*100}%"></i></div>
-    <div class="wv">${(pr*100).toFixed(0)}%</div></div>`).join("");
-  E("runPath").innerHTML=`<div class="card"><h3>${r.p} · ${r.ev} ${r.yr}${r.out==="F"?" (runner-up)":""}</h3>
-    <div class="note" style="margin:0 0 10px">Bar = how unlikely a standard top-5 player is to lose that round; the number is his win probability.
-    Whole path: ${oddsTxt(r.pref)} for the standard player, ${(r.pown*100).toFixed(1)}% for ${r.p} himself.</div>
-    <div class="dhead"><div>Round</div><div>Opponent</div><div>Difficulty</div><div>Std win</div></div>${rows}</div>`;
+    <div class="wv">${(pr*100).toFixed(0)}%</div><div class="wv own">${po==null?"—":(po*100).toFixed(0)+"%"}</div></div>`).join("");
+  E("runPath").innerHTML=`<div class="card"><h3>${r.p} · ${r.ev} ${r.yr}${fin?" (runner-up)":""}</h3>${summary}
+    <div class="note" style="margin:0 0 10px">Round by round. The bar is how likely the yardstick player is to <i>lose</i> that match; the two numbers are
+    his and ${first}'s own chance of winning it. Opponent ratings are Elo-like, 0 = the average tour player of the period.</div>
+    <div class="dhead runs"><div>Round</div><div>Opponent</div><div>Danger</div><div>Yardstick</div><div>${first}</div></div>${rows}</div>`;
 }
 drawRuns();
 
