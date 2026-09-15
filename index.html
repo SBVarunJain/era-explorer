@@ -398,7 +398,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
       <div class="seg" id="runOut"><button data-o="W" class="on">Champions</button><button data-o="F">Beaten finalists</button></div>
       <div class="seg" id="runSort"><button data-s="hard" class="on">Hardest path</button><button data-s="easy">Easiest path</button><button data-s="upset">Unlikeliest</button><button data-s="dom">Most dominant</button></div>
       <input type="text" id="runQ" placeholder="filter by player or event…">
-      <div class="seg" id="runEra"><button data-e="modern" class="on">1991 →</button><button data-e="all">All Open Era</button></div>
+      <div class="toolbar" style="margin:0" title="Only runs from this season on"><span class="chip">from <b class="num" id="runYear">1991</b></span><input type="range" id="runSlider" min="1968" max="2020" value="1991" style="width:170px"></div>
     </div>
     <div class="rhead"><div>#</div><div>Run</div><div>Path difficulty</div><div>Std top-5 odds</div><div>Own odds</div><div>Sets lost</div></div>
     <div id="runRows"></div>
@@ -416,7 +416,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-si
   and <span class="badge">mixed</span> careers). Hardware is every tour title, weighted by how rarely a standard top-5
   player wins that exact draw, in "standard slams" — a typical Masters is worth about half a slam, a typical 250 about a seventh.</div>
   <div class="toolbar" style="margin-bottom:14px">
-    <div class="seg" id="goatEra"><button data-e="modern" class="on">Modern era · 1991 →</button><button data-e="all">All Open Era · 1968 →</button></div>
+    <div class="toolbar" style="margin:0" title="A career counts when at least half its rated quarters fall from this season on"><span class="chip">from <b class="num" id="goatYear">1991</b></span><input type="range" id="goatSlider" min="1968" max="2020" value="1991" style="width:190px"></div>
     <span class="note" style="margin:0" id="goatEraNote">players rated mostly by the point model; the results-only careers (Laver → Lendl) are switched off</span>
   </div>
   <div class="seg" id="goatView" style="margin-bottom:14px"><button data-g="rank" class="on">Ranking</button><button data-g="rivers">Career rivers</button><button data-g="space">Weight space</button><button data-g="duel">Duel</button><button data-g="scatter">Peak vs longevity</button></div>
@@ -996,19 +996,25 @@ newSlamDraw();
 
 /* ---------- title runs ---------- */
 const RUNS=DATA.runs||[];
-const era={old:false};
-const MODERN_SHARE=0.5; /* a career counts as modern when at least half its quarters are rated by the point model */
+const era={from:1991}; /* shared by Title runs + GOAT; 1991 = where the point model begins */
+const MODERN_SHARE=0.5; /* a career is in the window when at least half its rated quarters fall from era.from on */
+const Q_OF_YEAR=y=>(y-2000)*4;
+function eraNote(){const y=era.from;
+  if(y<=1968)return "every Open Era career; pre-1991 ratings come from the results-only model mapped onto the point scale";
+  if(y<1991)return `careers with at least half their seasons from ${y} on; pre-1991 ratings come from the results-only model mapped onto the point scale`;
+  return `careers with at least half their rated quarters from ${y} on; the results-only careers (Laver → Lendl) are switched off`;}
+function setEraFrom(y){era.from=y;["run","goat"].forEach(k=>{E(k+"Slider").value=y;E(k+"Year").textContent=y;});
+  E("goatEraNote").textContent=eraNote();runState.sel=null;drawRuns();
+  spaceCells=null;rivDefault();drawGoat();if(E("gv-space").classList.contains("on"))drawSpace();}
 const LEVEL_NAME={G:"Slam",M:"Masters",F:"Tour Finals",A:"250 / 500",O:"Olympics"};
 const runState={lv:"G",out:"W",sort:"hard",q:"",sel:null};
 function runSeg(id,key,attr){E(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{runState[key]=b.dataset[attr];
   E(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));runState.sel=null;drawRuns();});}
 runSeg("runLevel","lv","l");runSeg("runOut","out","o");runSeg("runSort","sort","s");
-E("runEra").querySelectorAll("button").forEach(b=>b.onclick=()=>{era.old=b.dataset.e==="all";
-  E("runEra").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));runState.sel=null;drawRuns();});
 E("runQ").addEventListener("input",()=>{runState.q=E("runQ").value.trim().toLowerCase();drawRuns();});
 const oddsTxt=p=>p>=.5?"even":"1 in "+Math.round(1/p).toLocaleString();
 function runRows(){
-  let rows=RUNS.filter(r=>(era.old||r.tier!=="match")&&r.out===runState.out&&(runState.lv==="all"||r.lv===runState.lv||(runState.lv==="A"&&r.lv==="O")));
+  let rows=RUNS.filter(r=>r.yr>=era.from&&r.out===runState.out&&(runState.lv==="all"||r.lv===runState.lv||(runState.lv==="A"&&r.lv==="O")));
   if(runState.out==="F")rows=rows.filter(r=>r.lv==="G");
   if(runState.q)rows=rows.filter(r=>(r.p+" "+r.ev+" "+r.yr).toLowerCase().includes(runState.q));
   const key={hard:r=>-r.D,easy:r=>r.D,upset:r=>r.pown,dom:r=>-(r.z==null?-99:r.z)}[runState.sort];
@@ -1049,8 +1055,12 @@ const GO=DATA.goat||{players:[],scales:{},defaultRanks:{}};
 const GCOMP=[["peak_12m","Peak","best 12-month all-court rating"],["sustained_rel","Sustained (era)","Elo-years above each season's #10"],["sustained_abs","Sustained (absolute)","Elo-years above a fixed 2000–25 bar"],["hardware","Hardware","difficulty-weighted titles, in standard slams"],["dominance","Dominance","gap to #2 in seasons as the model's #1"],["breadth","Breadth","peak on the weakest surface"]];
 const gW={};const gDefault={};GCOMP.forEach(([k])=>{gDefault[k]=(GO.scales[k]||{w:0}).w;gW[k]=gDefault[k];});
 const gState={sel:null};
-GO.players.forEach(p=>{p.modern=p.tier==="point"||(p.tier==="mixed"&&(p.x.pointShare??1)>=MODERN_SHARE);});
-const goatPool=()=>era.old?GO.players:GO.players.filter(p=>p.modern);
+/* quarters a career was actually rated in (dense river arrays; null = season not played) */
+function ratedQuarters(p){if(p.qs===undefined){const rv=(GO.series||{})[p.p];p.qs=rv?rv.s.map((v,i)=>v==null?null:rv.q0+i).filter(q=>q!=null):null;}return p.qs;}
+function inEra(p){if(era.from<=1968)return true;const qs=ratedQuarters(p);
+  if(qs&&qs.length){const q0=Q_OF_YEAR(era.from);let n=0;for(const q of qs)if(q>=q0)n++;return n/qs.length>=MODERN_SHARE;}
+  return (p.yrs[0]+p.yrs[1])/2>=era.from;}
+const goatPool=()=>GO.players.filter(inEra);
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 function normal(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 function gZ(p,k,jit){const s=GO.scales[k];if(!s)return 0;let v=p.c[k];if(jit&&p.se[k])v+=jit*p.se[k];return (v-s.mean)/s.sd;}
@@ -1107,11 +1117,8 @@ const RV=GO.series||{}, LINES=GO.lines||[];
 const bankBySeason=new Map(LINES.map(l=>[l[0],l[3]]));
 const bankAt=y=>{const s=Math.floor(y);return bankBySeason.get(s)??bankBySeason.get(s-1)??bankBySeason.get(s+1)??null;};
 const byPlayer=new Map(GO.players.map(p=>[p.p,p]));
-E("goatEra").querySelectorAll("button").forEach(b=>b.onclick=()=>{era.old=b.dataset.e==="all";
-  E("goatEra").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
-  E("runEra").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.e===b.dataset.e));
-  E("goatEraNote").textContent=era.old?"every Open Era career; pre-1991 ratings come from the results-only model mapped onto the point scale":"players rated mostly by the point model; the results-only careers (Laver → Lendl) are switched off";
-  spaceCells=null;rivDefault();drawGoat();if(E("gv-space").classList.contains("on"))drawSpace();});
+["run","goat"].forEach(k=>{const sl=E(k+"Slider");let raf=0;sl.addEventListener("input",()=>{const y=+sl.value;
+  ["run","goat"].forEach(j=>{E(j+"Year").textContent=y;});cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>setEraFrom(y));});});
 E("goatView").querySelectorAll("button").forEach(b=>b.onclick=()=>{
   E("goatView").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
   document.querySelectorAll("#v-goat .gv").forEach(p=>p.classList.toggle("on",p.id==="gv-"+b.dataset.g));
